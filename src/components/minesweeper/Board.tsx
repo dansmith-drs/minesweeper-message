@@ -6,18 +6,23 @@ export interface BoardProps {
   height: number
   width: number
   mines: number
-  debug: boolean
+  data?: BoardData[][]
+  debug?: boolean
 }
 
 export interface BoardState {
   boardData: BoardData[][]
   mineCount: number
   gameMessage: gameMessage
+  rows: number
+  columns: number
+  totalMines: number
 }
 export enum gameMessage {
   inProgress = 'inProgress',
   won = 'won',
-  lost = 'lost'
+  lost = 'lost',
+  generate = 'generate'
 }
 
 export interface BoardData {
@@ -33,20 +38,23 @@ export interface BoardData {
 export class Board extends React.Component<BoardProps, BoardState> {
   constructor(props: BoardProps) {
     super(props)
-    console.log(props)
+    const totalMines = props.data ? this.getMines(props.data).length : props.mines
     this.state = {
-      boardData: this.initBoard(props.height, props.width, props.mines),
-      mineCount: props.mines,
-      gameMessage: gameMessage.inProgress
+      totalMines,
+      boardData: this.initBoard(props.height, props.width, props.mines, props.data),
+      mineCount: totalMines,
+      gameMessage: gameMessage.inProgress,
+      rows: 7,
+      columns: 7
     }
   }
 
   render() {
     // const { height, width, mines } = this.props
+    const { debug } = this.props
     return (
       <div>
         <div>
-          Debug
           <ul>
             {/* <li>Height: {height}</li>
             <li>Width: {width}</li>
@@ -61,6 +69,30 @@ export class Board extends React.Component<BoardProps, BoardState> {
           >
             Reset
           </button>
+          {debug && (
+            <div>
+              <button
+                onClick={() => {
+                  this.setState({
+                    gameMessage: gameMessage.generate,
+                    boardData: this.createEmptyBoard(this.state.rows, this.state.columns),
+                    mineCount: 0
+                  })
+                }}
+              >
+                Generate
+              </button>
+              <button
+                onClick={() => {
+                  console.log(JSON.stringify(this.state.boardData))
+                }}
+              >
+                Serialise
+              </button>
+              <input value={this.state.rows} onChange={evt => this.updateDimensionValue(evt, 'row')} />
+              <input value={this.state.columns} onChange={evt => this.updateDimensionValue(evt, 'col')} />
+            </div>
+          )}
         </div>
         Board
         <table className={boardStyles.board}>
@@ -68,6 +100,20 @@ export class Board extends React.Component<BoardProps, BoardState> {
         </table>
       </div>
     )
+  }
+
+  private updateDimensionValue(e: React.ChangeEvent<HTMLInputElement>, rowOrCol: string) {
+    let newState = {}
+    if (rowOrCol === 'row') {
+      newState = {
+        rows: e.target.value
+      }
+    } else {
+      newState = {
+        columns: e.target.value
+      }
+    }
+    this.setState(newState)
   }
 
   /**
@@ -112,8 +158,12 @@ export class Board extends React.Component<BoardProps, BoardState> {
   }
 
   private reset() {
-    const { height, width, mines } = this.props
-    this.setState({ gameMessage: gameMessage.inProgress, boardData: this.initBoard(height, width, mines), mineCount: mines })
+    const { height, width, mines, data } = this.props
+    this.setState({
+      gameMessage: gameMessage.inProgress,
+      boardData: this.initBoard(height, width, mines, data),
+      mineCount: this.state.totalMines
+    })
   }
 
   /**
@@ -122,8 +172,14 @@ export class Board extends React.Component<BoardProps, BoardState> {
    * @param width Width of the board
    * @param mines Number of mines to add to the board
    */
-  private initBoard(height: number, width: number, mines: number) {
-    let data = this.createEmptyBoard(height, width)
+  private initBoard(height: number, width: number, mines: number, boardData?: BoardData[][]) {
+    let data: BoardData[][] = []
+    if (boardData) {
+      data = this.getNeighbours(JSON.parse(JSON.stringify(boardData)))
+      data = this.hideBoard(data)
+      return data
+    }
+    data = this.createEmptyBoard(height, width)
     data = this.plantMines(data, mines)
     data = this.getNeighbours(data)
     return data
@@ -270,6 +326,12 @@ export class Board extends React.Component<BoardProps, BoardState> {
    * @param y y position
    */
   private handleCellClick(x: number, y: number) {
+    if (this.state.gameMessage === gameMessage.generate) {
+      const generateUpdatedData = this.state.boardData
+      generateUpdatedData[x][y].isMine = !generateUpdatedData[x][y].isMine
+      this.setState({ boardData: generateUpdatedData })
+      return
+    }
     const boardDataItem = this.state.boardData[x][y]
     if (boardDataItem.isRevealed || boardDataItem.isFlagged) {
       return
@@ -290,7 +352,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
       this.revealEmptyCells(this.state.boardData, x, y)
     }
 
-    if (this.getHiddenMines(updatedData).length === this.props.mines) {
+    if (this.getHiddenMines(updatedData).length === this.state.totalMines) {
       this.setState({ mineCount: 0, gameMessage: gameMessage.won })
       this.revealBoard()
       alert('You Win')
@@ -298,7 +360,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
 
     this.setState({
       boardData: updatedData,
-      mineCount: this.props.mines - this.getFlags(updatedData).length
+      mineCount: this.state.totalMines - this.getFlags(updatedData).length
     })
   }
 
@@ -311,7 +373,9 @@ export class Board extends React.Component<BoardProps, BoardState> {
   private handleCellRightClick(e: React.MouseEvent, x: number, y: number) {
     e.preventDefault()
 
-    const boardDataItem = this.state.boardData[x][y]
+    const updatedData = this.state.boardData
+
+    const boardDataItem = updatedData[x][y]
     let mines = this.state.mineCount
 
     if (boardDataItem.isRevealed) {
@@ -337,7 +401,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
     }
 
     this.setState({
-      boardData: this.state.boardData,
+      boardData: updatedData,
       mineCount: mines
     })
   }
@@ -403,6 +467,15 @@ export class Board extends React.Component<BoardProps, BoardState> {
     this.setState({
       boardData: updatedData
     })
+  }
+
+  private hideBoard(boardData: BoardData[][]) {
+    boardData.forEach(row => {
+      row.forEach(item => {
+        item.isRevealed = false
+      })
+    })
+    return boardData
   }
 
   private revealEmptyCells(boardData: BoardData[][], x: number, y: number) {

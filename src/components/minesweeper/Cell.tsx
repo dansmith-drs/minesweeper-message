@@ -9,7 +9,7 @@ export interface CellProps {
   neighbours: number
   onCellClick: () => void
   onCellRightClick: (e: React.MouseEvent) => void
-  debug: boolean
+  debug?: boolean
 }
 export class Cell extends React.Component<CellProps> {
   render() {
