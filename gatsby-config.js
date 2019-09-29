@@ -2,7 +2,7 @@
 
 module.exports = {
   siteMetadata: {
-    title: 'gatsby-starter-typescript-plus',
+    title: 'Minesweeper',
     description: 'A starter kit for TypeScript-based Gatsby projects with sensible defaults.',
     siteUrl: 'https://gatsby-starter-typescript-plus.netlify.com',
     author: {

@@ -8,7 +8,7 @@ export class Game extends React.Component {
       <div>
         <h3>Minesweeper Game</h3>
         <Board height={10} width={10} mines={5} />
-        <Board height={0} width={0} mines={0} data={message2} debug={false} />
+        <Board height={0} width={0} mines={0} data={message2} debug={true} />
       </div>
     )
   }

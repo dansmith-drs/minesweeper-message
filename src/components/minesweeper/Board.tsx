@@ -19,9 +19,9 @@ export interface BoardState {
   totalMines: number
 }
 export enum gameMessage {
-  inProgress = 'inProgress',
-  won = 'won',
-  lost = 'lost',
+  inProgress = 'You can do it!',
+  won = 'Yay, well done!',
+  lost = 'Bad luck :(',
   generate = 'generate'
 }
 
@@ -59,13 +59,14 @@ export class Board extends React.Component<BoardProps, BoardState> {
             {/* <li>Height: {height}</li>
             <li>Width: {width}</li>
             <li>Mines: {mines}</li> */}
-            <li>Mine Count: {this.state.mineCount}</li>
-            <li>Game Message: {this.state.gameMessage}</li>
+            {/* <li>Mine Count: {this.state.mineCount}</li> */}
+            {/* <li>Game Message: {this.state.gameMessage}</li> */}
           </ul>
           <button
             onClick={() => {
               this.reset()
             }}
+            className={boardStyles.controlButtons}
           >
             Reset
           </button>
@@ -94,7 +95,6 @@ export class Board extends React.Component<BoardProps, BoardState> {
             </div>
           )}
         </div>
-        Board
         <table className={boardStyles.board}>
           <tbody>{this.getRows(this.state.boardData)}</tbody>
         </table>
@@ -340,7 +340,7 @@ export class Board extends React.Component<BoardProps, BoardState> {
     if (boardDataItem.isMine) {
       this.setState({ gameMessage: gameMessage.lost })
       this.revealBoard()
-      alert('Game Over')
+      alert(`${gameMessage.lost} At least you can see the message now.`)
     }
 
     const updatedData = this.state.boardData

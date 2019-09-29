@@ -1,3 +1,9 @@
 .board {
   border-spacing: 1px;
+  margin: auto;
+}
+
+.controlButtons {
+  margin: 00 auto 1rem auto;
+  display: block;
 }
